@@ -1,0 +1,4 @@
+rust/target
+
+python/**/*.pyc
+python/venv
