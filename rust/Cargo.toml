@@ -7,4 +7,5 @@ edition = "2021"
 [dependencies]
 glutin = "0.26.0"
 gl = "*"
-nalgebra = "*"
+cgmath = "0.16.1"
+image = "*"

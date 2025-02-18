@@ -1,8 +1,9 @@
+use cgmath::Matrix;
 use gl::types::*;
 use std::ffi::CString;
 use std::fs;
 use std::ptr;
-use crate::matrix::Matrix;
+use cgmath::Matrix4;
 
 pub struct Shader {
     pub program: GLuint,
@@ -20,8 +21,8 @@ impl Shader {
             gl::AttachShader(program, fragment_shader);
             gl::LinkProgram(program);
 
-            gl::DeleteProgram(vertex_shader);
-            gl::DeleteProgram(fragment_shader);
+            gl::DeleteShader(vertex_shader);
+            gl::DeleteShader(fragment_shader);
         }
 
         let mut success: GLint = 0;
@@ -60,13 +61,10 @@ impl Shader {
         unsafe {
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
             if success == 0 {
-                let mut info_log = vec![0; 512];
-                gl::GetShaderInfoLog(
-                    shader,
-                    512,
-                    ptr::null_mut(),
-                    info_log.as_mut_ptr() as *mut _
-                );
+                let mut length: GLint = 0;
+                gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut length);
+                let mut info_log = vec![0u8; length as usize];
+                gl::GetShaderInfoLog(shader, length, ptr::null_mut(), info_log.as_mut_ptr() as *mut _);
                 return Err(format!(
                     "Erreur de compilation du shader {} : {}",
                     path,
@@ -85,17 +83,8 @@ impl Shader {
         }
     }
 
-    pub fn uniform_matrix(&self, location: i32, matrix: &Matrix) {
-        let flat_matrix: [f64; 16] = [
-            matrix.data[0][0], matrix.data[0][1], matrix.data[0][2], matrix.data[0][3],
-            matrix.data[1][0], matrix.data[1][1], matrix.data[1][2], matrix.data[1][3],
-            matrix.data[2][0], matrix.data[2][1], matrix.data[2][2], matrix.data[2][3],
-            matrix.data[3][0], matrix.data[3][1], matrix.data[3][2], matrix.data[3][3],
-        ];
-
-        unsafe {
-            gl::UniformMatrix4fv(location, 1, gl::FALSE, flat_matrix.as_ptr() as *const GLfloat);
-        }
+    pub unsafe fn uniform_matrix(&self, location: i32, matrix: &Matrix4<f32>) {
+        gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_ptr());
     }
 
     pub fn use_program(&self) {
